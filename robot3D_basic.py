@@ -7,7 +7,7 @@ import time
 import vedo
 
 
-def ForwardKinematics(Phi, L1, L2, L3):
+def forward_kinematics(Phi, L1, L2, L3, L4):
 
     R_01 = RotationMatrix(Phi[0], axis_name='z')   # Rotation matrix
     r1 = 0.4
@@ -21,7 +21,7 @@ def ForwardKinematics(Phi, L1, L2, L3):
     # Matrix of Frame 2 (written w.r.t. Frame 1, which is the previous frame)
     R_12 = RotationMatrix(Phi[1], axis_name='z')   # Rotation matrix
     # Frame's origin (w.r.t. previous frame)
-    p2 = np.array([[L1+2*r1], [0.0], [0.0]])
+    p2 = np.array([[L1+(2*r1)], [0.0], [0.0]])
     t_12 = p2                                      # Translation vector
 
     # Matrix of Frame 2 w.r.t. Frame 1
@@ -33,7 +33,7 @@ def ForwardKinematics(Phi, L1, L2, L3):
     # Matrix of Frame 3 (written w.r.t. Frame 2, which is the previous frame)
     R_23 = RotationMatrix(Phi[2], axis_name='z')   # Rotation matrix
     # Frame's origin (w.r.t. previous frame)
-    p3 = np.array([[L2+2*r1], [0.0], [0.0]])
+    p3 = np.array([[L2+(2*r1)], [0.0], [0.0]])
     t_23 = p3                                      # Translation vector
 
     # Matrix of Frame 3 w.r.t. Frame 2
@@ -45,7 +45,7 @@ def ForwardKinematics(Phi, L1, L2, L3):
    # Matrix of Frame 4 (written w.r.t. Frame 3, which is the previous frame)
     R_34 = RotationMatrix(Phi[3], axis_name='z')   # Rotation matrix
     # Frame's origin (w.r.t. previous frame)
-    p4 = np.array([[L3+2*r1], [0.0], [0.0]])
+    p4 = np.array([[L3+r1], [0.0], [0.0]])
     t_34 = p4                                      # Translation vector
 
     # Matrix of Frame 4 w.r.t. Frame 3
@@ -54,7 +54,7 @@ def ForwardKinematics(Phi, L1, L2, L3):
     # Matrix of Frame 4 w.r.t. Frame 0 (i.e., the world frame)
     T_04 = T_03 @ T_34
 
-    end_effector = T_04[-1]
+    end_effector = T_04[:, -1][:3]
 
     return T_01, T_02, T_03, T_04, end_effector
 
