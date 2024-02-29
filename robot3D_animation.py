@@ -8,7 +8,55 @@ import vedo
 
 
 def ForwardKinematics(Phi, L1, L2, L3):
-    pass
+
+    R_01 = RotationMatrix(Phi[0], axis_name='z')   # Rotation matrix
+    r1 = 0.4
+    # Frame's origin (w.r.t. previous frame)
+    p1 = np.array([[3], [2], [0.0]])
+    t_01 = p1                                      # Translation vector
+
+    # Matrix of Frame 1 w.r.t. Frame 0 (i.e., the world frame)
+    T_01 = getLocalFrameMatrix(R_01, t_01)
+
+    # Matrix of Frame 2 (written w.r.t. Frame 1, which is the previous frame)
+    R_12 = RotationMatrix(Phi[1], axis_name='z')   # Rotation matrix
+    # Frame's origin (w.r.t. previous frame)
+    p2 = np.array([[L1+2*r1], [0.0], [0.0]])
+    t_12 = p2                                      # Translation vector
+
+    # Matrix of Frame 2 w.r.t. Frame 1
+    T_12 = getLocalFrameMatrix(R_12, t_12)
+
+    # Matrix of Frame 2 w.r.t. Frame 0 (i.e., the world frame)
+    T_02 = T_01 @ T_12
+
+    # Matrix of Frame 3 (written w.r.t. Frame 2, which is the previous frame)
+    R_23 = RotationMatrix(Phi[2], axis_name='z')   # Rotation matrix
+    # Frame's origin (w.r.t. previous frame)
+    p3 = np.array([[L2+2*r1], [0.0], [0.0]])
+    t_23 = p3                                      # Translation vector
+
+    # Matrix of Frame 3 w.r.t. Frame 2
+    T_23 = getLocalFrameMatrix(R_23, t_23)
+
+    # Matrix of Frame 3 w.r.t. Frame 0 (i.e., the world frame)
+    T_03 = T_02 @ T_23
+
+   # Matrix of Frame 4 (written w.r.t. Frame 3, which is the previous frame)
+    R_34 = RotationMatrix(Phi[3], axis_name='z')   # Rotation matrix
+    # Frame's origin (w.r.t. previous frame)
+    p4 = np.array([[L3+2*r1], [0.0], [0.0]])
+    t_34 = p4                                      # Translation vector
+
+    # Matrix of Frame 4 w.r.t. Frame 3
+    T_34 = getLocalFrameMatrix(R_34, t_34)
+
+    # Matrix of Frame 4 w.r.t. Frame 0 (i.e., the world frame)
+    T_04 = T_03 @ T_34
+
+    end_effector = T_04[-1]
+
+    return T_01, T_02, T_03, T_04, end_effector
 
 
 def RotationMatrix(theta, axis_name):
@@ -118,24 +166,14 @@ def main():
     # Lengths of arm parts
     L1 = 5   # Length of link 1
     L2 = 8   # Length of link 2
-    L3 = 6
+    L3 = 3
+    L4 = 0
 
     # Joint angles
-    phi1 = 30     # Rotation angle of part 1 in degrees
-    phi2 = -10    # Rotation angle of part 2 in degrees
-    phi3 = 20     # Rotation angle of the end-effector in degrees
-    phi4 = 0
-
-    # Matrix of Frame 1 (written w.r.t. Frame 0, which is the previous frame)
-    R_01 = RotationMatrix(phi1, axis_name='z')   # Rotation matrix
+    Phi = [30, -10, 20, 0]
     r1 = 0.4
-    # Frame's origin (w.r.t. previous frame)
-    p1 = np.array([[3], [2], [0.0]])
-    t_01 = p1                                      # Translation vector
 
-    # Matrix of Frame 1 w.r.t. Frame 0 (i.e., the world frame)
-    T_01 = getLocalFrameMatrix(R_01, t_01)
-
+    T_01, T_02, T_03, T_04, e = ForwardKinematics(Phi, L1, L2, L3)
     # Create the coordinate frame mesh and transform
 
     # Now, let's create a cylinder and add it to the local coordinate frame
@@ -155,21 +193,6 @@ def main():
     # Transform the part to position it at its correct location and orientation
     Frame1.apply_transform(T_01)
 
-    # Matrix of Frame 2 (written w.r.t. Frame 1, which is the previous frame)
-    R_12 = RotationMatrix(phi2, axis_name='z')   # Rotation matrix
-    # Frame's origin (w.r.t. previous frame)
-    p2 = np.array([[L1+2*r1], [0.0], [0.0]])
-    t_12 = p2                                      # Translation vector
-
-    # Matrix of Frame 2 w.r.t. Frame 1
-    T_12 = getLocalFrameMatrix(R_12, t_12)
-
-    # Matrix of Frame 2 w.r.t. Frame 0 (i.e., the world frame)
-    T_02 = T_01 @ T_12
-
-    # Create the coordinate frame mesh and transform
-
-    # Now, let's create a cylinder and add it to the local coordinate frame
     link2_mesh = Cylinder(r=0.4,
                           height=L2,
                           pos=(L2/2, 0, 0),
@@ -184,18 +207,6 @@ def main():
 
     # Transform the part to position it at its correct location and orientation
     Frame2.apply_transform(T_02)
-
-    # Matrix of Frame 3 (written w.r.t. Frame 2, which is the previous frame)
-    R_23 = RotationMatrix(phi3, axis_name='z')   # Rotation matrix
-    # Frame's origin (w.r.t. previous frame)
-    p3 = np.array([[L2+2*r1], [0.0], [0.0]])
-    t_23 = p3                                      # Translation vector
-
-    # Matrix of Frame 3 w.r.t. Frame 2
-    T_23 = getLocalFrameMatrix(R_23, t_23)
-
-    # Matrix of Frame 3 w.r.t. Frame 0 (i.e., the world frame)
-    T_03 = T_01 @ T_12 @ T_23
 
     # Create the coordinate frame mesh and transform. This point is the end-effector. So, I am
     # just creating the coordinate frame.
@@ -213,18 +224,6 @@ def main():
     # Transform the part to position it at its correct location and orientation
     Frame3.apply_transform(T_03)
 
-   # Matrix of Frame 4 (written w.r.t. Frame 3, which is the previous frame)
-    R_34 = RotationMatrix(phi4, axis_name='z')   # Rotation matrix
-    # Frame's origin (w.r.t. previous frame)
-    p4 = np.array([[L3+2*r1], [0.0], [0.0]])
-    t_34 = p4                                      # Translation vector
-
-    # Matrix of Frame 4 w.r.t. Frame 3
-    T_34 = getLocalFrameMatrix(R_34, t_34)
-
-    # Matrix of Frame 4 w.r.t. Frame 0 (i.e., the world frame)
-    T_04 = T_01 @ T_12 @ T_23 @ T_34
-
     # Create the coordinate frame mesh and transform. This point is the end-effector. So, I am
     # just creating the coordinate frame.
     Frame4 = createCoordinateFrameMesh()
@@ -235,58 +234,54 @@ def main():
     Frame4.apply_transform(T_04)
     # Show everything
     show([Frame1, Frame2, Frame3, Frame4], axes, viewup="z", interactive=False)
-    for i in range(0, 25, 2):
-        Tx = RotationMatrix(i, axis_name='x')
-        Frame1.apply_transform(Tx)
-        Frame2.apply_transform(Tx)
-        Frame3.apply_transform(Tx)
-        Frame4.apply_transform(Tx)
-        time.sleep(0.25)
-        show([Frame1, Frame2, Frame3, Frame4],
-             axes, viewup="z", interactive=False)
-    time.sleep(1)
-    for i in range(0, 20, 2):
-        Tx = RotationMatrix(20, axis_name='z')
-        Frame1.apply_transform(Tx)
-        Frame2.apply_transform(Tx)
-        Frame3.apply_transform(Tx)
-        Frame4.apply_transform(Tx)
-        time.sleep(0.25)
-        show([Frame1, Frame2, Frame3, Frame4],
-             axes, viewup="z", interactive=False)
-    for i in range(0, 20, 2):
-        Tx = RotationMatrix(-20, axis_name='y')
-        Frame1.apply_transform(Tx)
-        Frame2.apply_transform(Tx)
-        Frame3.apply_transform(Tx)
-        Frame4.apply_transform(Tx)
-        time.sleep(0.25)
-        show([Frame1, Frame2, Frame3, Frame4],
-             axes, viewup="z", interactive=False)
-    for i in range(0, 20, 2):
-        Tx = RotationMatrix(-20, axis_name='z')
-        Frame1.apply_transform(Tx)
-        Frame2.apply_transform(Tx)
-        Frame3.apply_transform(Tx)
-        Frame4.apply_transform(Tx)
-        time.sleep(0.25)
-        show([Frame1, Frame2, Frame3, Frame4],
-             axes, viewup="z", interactive=False)
-    # for i in range(0, 20, 2):
-    #     Phi = np.array([30, -50, -30, 0])
-    #     T_01, T_02, T_03, = ForwardKinematics(Phi, L1, L2, L3)
-    #     Frame1.apply_transform(T_01)
-    #     Frame2.apply_transform(T_02)
-    #     Frame3.apply_transform(T_03)
-    #     time.sleep(0.25)
-    #     show([Frame1, Frame2, Frame3, Frame4],
-    #          axes, viewup="z", interactive=False)
-    # Frame1.apply_transform(Tx1)
-    # Frame2.apply_transform(Tx1)
-    # Frame3.apply_transform(Tx1)
-    # Frame4.apply_transform(Tx1)
+    Frame1.apply_transform(np.linalg.inv(T_01))
+    Frame2.apply_transform(np.linalg.inv(T_02))
+    Frame3.apply_transform(np.linalg.inv(T_03))
+    Frame4.apply_transform(np.linalg.inv(T_04))
+    phi_increm = Phi
 
-    # show([Frame1, Frame2, Frame3, Frame4], axes, viewup="z").close()
+    for i in range(0, 25, 2):
+        phi_increm[1] += i
+        T_01, T_02, T_03, T_04, e = ForwardKinematics(phi_increm, L1, L2, L3)
+        Frame1.apply_transform(T_01)
+        Frame2.apply_transform(T_02)
+        Frame3.apply_transform(T_03)
+        Frame4.apply_transform(T_04)
+        show([Frame1, Frame2, Frame3, Frame4],
+             axes, viewup="z", interactive=False)
+        time.sleep(0.2)
+        Frame1.apply_transform(np.linalg.inv(T_01))
+        Frame2.apply_transform(np.linalg.inv(T_02))
+        Frame3.apply_transform(np.linalg.inv(T_03))
+        Frame4.apply_transform(np.linalg.inv(T_04))
+    for i in range(0, 25, 2):
+        phi_increm[2] += i
+        T_01, T_02, T_03, T_04, e = ForwardKinematics(phi_increm, L1, L2, L3)
+        Frame1.apply_transform(T_01)
+        Frame2.apply_transform(T_02)
+        Frame3.apply_transform(T_03)
+        Frame4.apply_transform(T_04)
+        show([Frame1, Frame2, Frame3, Frame4],
+             axes, viewup="z", interactive=False)
+        time.sleep(0.2)
+        Frame1.apply_transform(np.linalg.inv(T_01))
+        Frame2.apply_transform(np.linalg.inv(T_02))
+        Frame3.apply_transform(np.linalg.inv(T_03))
+        Frame4.apply_transform(np.linalg.inv(T_04))
+    for i in range(0, 25, 2):
+        phi_increm[0] += i
+        T_01, T_02, T_03, T_04, e = ForwardKinematics(phi_increm, L1, L2, L3)
+        Frame1.apply_transform(T_01)
+        Frame2.apply_transform(T_02)
+        Frame3.apply_transform(T_03)
+        Frame4.apply_transform(T_04)
+        show([Frame1, Frame2, Frame3, Frame4],
+             axes, viewup="z", interactive=False)
+        time.sleep(0.2)
+        Frame1.apply_transform(np.linalg.inv(T_01))
+        Frame2.apply_transform(np.linalg.inv(T_02))
+        Frame3.apply_transform(np.linalg.inv(T_03))
+        Frame4.apply_transform(np.linalg.inv(T_04))
 
 
 if __name__ == '__main__':
